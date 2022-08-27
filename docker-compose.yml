@@ -1,0 +1,57 @@
+version: '3'
+services:
+  front:
+    restart: always
+    build:
+      context: ./front
+      dockerfile: Dockerfile
+    container_name: front
+    image: front
+    depends_on:
+      - back
+    volumes:
+      - ./front/nginx:/etc/nginx/conf.d
+    ports:
+      - "8080:8080"
+    networks:
+      - front-network
+      - back-network
+
+  postgres:
+    container_name: postgres
+    image: postgres:12.2-alpine
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"
+    restart: always
+    volumes:
+      - ./init:/docker-entrypoint-initdb.d/
+    networks:
+      - back-network
+
+  backend:
+    restart: always
+    build:
+      context: ./back
+      dockerfile: Dockerfile
+    container_name: back
+    image: back
+    environment:
+      - "DB_HOST=postgres"
+    ports:
+      - '8090:8090'
+    links:
+      - postgres
+    depends_on:
+      - postgres
+    networks:
+      - front-network
+      - back-network
+
+networks:
+  front-network:
+    driver: bridge
+  back-network:
+    driver: bridge
